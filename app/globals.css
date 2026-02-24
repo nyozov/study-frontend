@@ -1,59 +1,33 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
-:root {
-  color-scheme: dark;
-}
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
 
-body {
-  background: #0b0b11;
-  color: #eef2ff;
-  font-family: var(--font-geist-sans), "SF Pro Display", system-ui, sans-serif;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-geist-sans), "SF Pro Display", system-ui, sans-serif;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-cyan-400 via-indigo-400 to-fuchsia-400 text-slate-950 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.7)] transition hover:brightness-110;
+    @apply bg-accent text-accent-foreground transition;
   }
 
   .btn-ghost {
-    @apply border border-white/15 bg-white/5 text-slate-200 transition hover:border-white/30 hover:bg-white/10;
+    @apply border border-border bg-surface text-foreground transition hover:bg-default;
   }
 
   .glass-panel {
-    @apply border border-white/10 bg-white/5 shadow-[0_25px_60px_-40px_rgba(15,23,42,0.6)] backdrop-blur;
+    @apply border border-border bg-surface/80 backdrop-blur;
   }
 
   .muted-chip {
-    @apply border border-white/10 bg-white/5 text-slate-300;
+    @apply border border-border bg-surface text-muted;
   }
 }
 
-@keyframes rise {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-@keyframes pulseGlow {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-.animate-rise {
-  animation: rise 0.5s ease-out both;
-}
-
-.animate-glow {
-  animation: pulseGlow 3.5s ease-in-out infinite;
-}

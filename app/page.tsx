@@ -102,17 +102,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0b11] text-slate-100">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute left-16 top-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl animate-glow" />
-        <div className="absolute right-12 top-12 h-60 w-60 rounded-full bg-indigo-500/10 blur-3xl animate-glow" />
-        <div className="absolute left-1/3 top-[55%] h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl animate-glow" />
-      </div>
+    <div className="min-h-screen bg-background text-foreground">
+      
 
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 px-6 py-14">
         <header className="flex flex-col items-center gap-4 text-center">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface">
               <svg
                 width="26"
                 height="26"
@@ -141,18 +137,18 @@ export default function Home() {
                     x2="20"
                     y2="20"
                   >
-                    <stop stopColor="#22d3ee" />
-                    <stop offset="0.5" stopColor="#818cf8" />
-                    <stop offset="1" stopColor="#e879f9" />
+                    <stop stopColor="var(--accent)" />
+                    <stop offset="0.5" stopColor="var(--accent-soft)" />
+                    <stop offset="1" stopColor="var(--default)" />
                   </linearGradient>
                 </defs>
               </svg>
             </div>
             <div className="text-left">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.35em] text-muted">
                 AceAi
               </p>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-foreground">
                 Interview practice suite
               </p>
             </div>
@@ -160,7 +156,7 @@ export default function Home() {
           <h1 className="text-3xl font-semibold sm:text-4xl">
             Nail your next interview with confidence.
           </h1>
-          <p className="max-w-2xl text-sm text-slate-300">
+          <p className="max-w-2xl text-sm text-muted">
             Paste a job description below. Our AI will analyze the requirements
             and generate a personalized mock interview with technical
             short-answer questions.
@@ -168,10 +164,10 @@ export default function Home() {
         </header>
 
         <section className="flex flex-col gap-6">
-          <Card variant="secondary" className="glass-panel animate-rise">
+          <Card variant="secondary" className="glass-panel">
             <Card.Content className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                <label className="text-xs uppercase tracking-[0.2em] text-muted">
                   Job description
                 </label>
                 <TextArea
@@ -180,7 +176,7 @@ export default function Home() {
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
                   variant="secondary"
-                  className="bg-white/5 text-slate-100 placeholder:text-slate-500"
+                  className="bg-default text-foreground placeholder:text-muted"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -220,26 +216,23 @@ export default function Home() {
               </div>
 
               {error && (
-                <Card
-                  variant="secondary"
-                  className="border border-rose-500/40 bg-rose-500/10"
-                >
-                  <Card.Content className="text-sm text-rose-200">
+                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                  <Card.Content className="text-sm text-danger-foreground">
                     {error}
                   </Card.Content>
                 </Card>
               )}
 
               {progress.length > 0 && (
-                <Card variant="secondary" className="bg-white/5">
-                  <Card.Header className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                <Card variant="secondary" className="bg-surface">
+                  <Card.Header className="text-xs uppercase tracking-[0.2em] text-muted">
                     Progress
                   </Card.Header>
-                  <Card.Content className="flex flex-col gap-2 text-xs text-slate-300">
+                  <Card.Content className="flex flex-col gap-2 text-xs text-muted">
                     {progress.slice(-5).map((item, idx) => (
                       <div
                         key={`${item}-${idx}`}
-                        className="rounded-md bg-black/40 px-2 py-1"
+                        className="rounded-md bg-default/40 px-2 py-1"
                       >
                         {item}
                       </div>
