@@ -1,24 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-type QuizQuestion = {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-};
-
-type ReviewResponse = {
-  summary: string;
-  strengths: string[];
-  improvements: string[];
-  score: string;
-};
-
-type IdealAnswerResponse = {
-  answer: string;
-};
+import { Button, Card, Chip, TextArea } from "@heroui/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type CourseGuide = {
   jobTitle: string;
@@ -27,42 +11,22 @@ type CourseGuide = {
     title: string;
     description: string;
     resources: string[];
-    quizQuestions: QuizQuestion[];
   }>;
   mockInterviewQuestions: string[];
 };
 
-type QuizState = {
-  started: boolean;
-  currentIndex: number;
-  selectedIndex?: number;
-  revealed: boolean;
-  score: number;
-};
-
 const promptPresets = [
-  "Junior backend engineer focused on Java, Spring Boot, and PostgreSQL",
-  "Data analyst transitioning into ML engineering with Python and SQL",
-  "Frontend engineer learning TypeScript, React, and system design",
-  "Product manager pivoting into AI product roles in 60 days",
+  "Senior growth marketer for Amazon marketplace strategy",
+  "E-commerce specialist managing Amazon PPC, SEO, and listings",
+  "Frontend engineer scaling design systems in React",
+  "Data analyst pivoting to ML engineering in 90 days",
 ];
 
-const optionLabels = ["A", "B", "C", "D"];
-
 export default function Home() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [response, setResponse] = useState<CourseGuide | null>(null);
-  const [raw, setRaw] = useState<string | null>(null);
-  const [quizStates, setQuizStates] = useState<Record<number, QuizState>>({});
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [reviews, setReviews] = useState<Record<string, ReviewResponse>>({});
-  const [reviewLoading, setReviewLoading] = useState<Record<string, boolean>>({});
-  const [reviewError, setReviewError] = useState<Record<string, string>>({});
-  const [ideals, setIdeals] = useState<Record<string, IdealAnswerResponse>>({});
-  const [idealLoading, setIdealLoading] = useState<Record<string, boolean>>({});
-  const [idealError, setIdealError] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState<string[]>([]);
 
   const canSubmit = prompt.trim().length > 3 && !loading;
@@ -72,16 +36,6 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
-    setResponse(null);
-    setRaw(null);
-    setQuizStates({});
-    setAnswers({});
-    setReviews({});
-    setReviewLoading({});
-    setReviewError({});
-    setIdeals({});
-    setIdealLoading({});
-    setIdealError({});
     setProgress(["Starting..."]);
 
     try {
@@ -129,9 +83,10 @@ export default function Home() {
           }
 
           if (eventName === "result") {
-            setRaw(eventData);
             const json = JSON.parse(eventData) as CourseGuide;
-            setResponse(json);
+            localStorage.setItem("aceai_course", JSON.stringify(json));
+            router.push("/quiz");
+            return;
           }
 
           if (eventName === "error") {
@@ -146,589 +101,154 @@ export default function Home() {
     }
   };
 
-  const modules = useMemo(() => response?.modules ?? [], [response]);
-
-  const startQuiz = (moduleIndex: number) => {
-    setQuizStates((prev) => ({
-      ...prev,
-      [moduleIndex]: {
-        started: true,
-        currentIndex: 0,
-        selectedIndex: undefined,
-        revealed: false,
-        score: 0,
-      },
-    }));
-  };
-
-  const selectOption = (
-    moduleIndex: number,
-    optionIndex: number,
-    correctIndex: number
-  ) => {
-    setQuizStates((prev) => {
-      const current = prev[moduleIndex];
-      if (!current) return prev;
-
-      const alreadyAnswered = current.revealed;
-      const scoreDelta =
-        !alreadyAnswered && optionIndex === correctIndex ? 1 : 0;
-
-      return {
-        ...prev,
-        [moduleIndex]: {
-          ...current,
-          selectedIndex: optionIndex,
-          score: current.score + scoreDelta,
-        },
-      };
-    });
-  };
-
-  const revealAnswer = (moduleIndex: number) => {
-    setQuizStates((prev) => {
-      const current = prev[moduleIndex];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [moduleIndex]: {
-          ...current,
-          revealed: true,
-        },
-      };
-    });
-  };
-
-  const nextQuestion = (moduleIndex: number, total: number) => {
-    setQuizStates((prev) => {
-      const current = prev[moduleIndex];
-      if (!current) return prev;
-
-      const isLast = current.currentIndex >= total - 1;
-      if (isLast) {
-        return {
-          ...prev,
-          [moduleIndex]: {
-            ...current,
-            currentIndex: total,
-          },
-        };
-      }
-
-      return {
-        ...prev,
-        [moduleIndex]: {
-          ...current,
-          currentIndex: current.currentIndex + 1,
-          selectedIndex: undefined,
-          revealed: false,
-        },
-      };
-    });
-  };
-
-  const submitReview = async (question: string, key: string) => {
-    const answer = answers[key] ?? "";
-    if (!answer.trim() || !response) return;
-
-    setReviewLoading((prev) => ({ ...prev, [key]: true }));
-    setReviewError((prev) => ({ ...prev, [key]: "" }));
-
-    try {
-      const res = await fetch("/api/mock-interview/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question,
-          answer: answer.trim(),
-          jobTitle: response.jobTitle,
-        }),
-      });
-
-      const text = await res.text();
-      if (!res.ok) {
-        setReviewError((prev) => ({
-          ...prev,
-          [key]: `Request failed (${res.status}). ${text}`,
-        }));
-        return;
-      }
-
-      const json = JSON.parse(text) as ReviewResponse;
-      setReviews((prev) => ({ ...prev, [key]: json }));
-    } catch (err) {
-      setReviewError((prev) => ({
-        ...prev,
-        [key]: err instanceof Error ? err.message : "Unknown error",
-      }));
-    } finally {
-      setReviewLoading((prev) => ({ ...prev, [key]: false }));
-    }
-  };
-
-  const getIdealAnswer = async (question: string, key: string) => {
-    if (!response) return;
-
-    setIdealLoading((prev) => ({ ...prev, [key]: true }));
-    setIdealError((prev) => ({ ...prev, [key]: "" }));
-
-    try {
-      const res = await fetch("/api/mock-interview/ideal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question,
-          jobTitle: response.jobTitle,
-        }),
-      });
-
-      const text = await res.text();
-      if (!res.ok) {
-        setIdealError((prev) => ({
-          ...prev,
-          [key]: `Request failed (${res.status}). ${text}`,
-        }));
-        return;
-      }
-
-      const json = JSON.parse(text) as IdealAnswerResponse;
-      setIdeals((prev) => ({ ...prev, [key]: json }));
-    } catch (err) {
-      setIdealError((prev) => ({
-        ...prev,
-        [key]: err instanceof Error ? err.message : "Unknown error",
-      }));
-    } finally {
-      setIdealLoading((prev) => ({ ...prev, [key]: false }));
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-ink text-slate-100">
+    <div className="min-h-screen bg-[#0b0b11] text-slate-100">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute left-16 top-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute right-16 top-10 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute left-1/3 top-[55%] h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl" />
+        <div className="absolute left-16 top-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl animate-glow" />
+        <div className="absolute right-12 top-12 h-60 w-60 rounded-full bg-indigo-500/10 blur-3xl animate-glow" />
+        <div className="absolute left-1/3 top-[55%] h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl animate-glow" />
       </div>
 
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-6 py-12">
+      <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 px-6 py-14">
         <header className="flex flex-col items-center gap-4 text-center">
-          <span className="badge-dark">Study Mode</span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2C7.6 2 4 5.6 4 10c0 4.3 3.4 7.8 7.7 8v3l1.3-2.4L16 21v-3c4.1-.6 7-4.2 7-8.9C23 5.6 19.4 2 12 2Z"
+                  stroke="url(#ace-gradient)"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 14l2.4-4.5L13 12l2.4-4.5"
+                  stroke="url(#ace-gradient)"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <defs>
+                  <linearGradient
+                    id="ace-gradient"
+                    x1="4"
+                    y1="4"
+                    x2="20"
+                    y2="20"
+                  >
+                    <stop stopColor="#22d3ee" />
+                    <stop offset="0.5" stopColor="#818cf8" />
+                    <stop offset="1" stopColor="#e879f9" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div className="text-left">
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                AceAi
+              </p>
+              <p className="text-lg font-semibold text-white">
+                Interview practice suite
+              </p>
+            </div>
+          </div>
           <h1 className="text-3xl font-semibold sm:text-4xl">
-            Enter a job description. Start studying.
+            Nail your next interview with confidence.
           </h1>
           <p className="max-w-2xl text-sm text-slate-300">
-            Generate a structured course, quizzes, and mock interviews. Practice fast.
+            Paste a job description below. Our AI will analyze the requirements
+            and generate a personalized mock interview with technical
+            short-answer questions.
           </p>
         </header>
 
         <section className="flex flex-col gap-6">
-          <div className="panel">
-            <textarea
-              className="min-h-[160px] w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white shadow-inner outline-none transition focus:border-white/30 focus:ring-2 focus:ring-white/10"
-              placeholder="Paste a job description or role target here..."
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-              {promptPresets.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  className="chip"
-                  onClick={() => setPrompt(preset)}
+          <Card variant="secondary" className="glass-panel animate-rise">
+            <Card.Content className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  Job description
+                </label>
+                <TextArea
+                  rows={7}
+                  placeholder="Paste a job description or describe a role here..."
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  variant="secondary"
+                  className="bg-white/5 text-slate-100 placeholder:text-slate-500"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {promptPresets.map((preset) => (
+                  <Button
+                    key={preset}
+                    size="sm"
+                    variant="secondary"
+                    className="btn-ghost"
+                    onPress={() => setPrompt(preset)}
+                  >
+                    {preset}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  className="btn-primary"
+                  onPress={handleSubmit}
+                  isDisabled={!canSubmit}
                 >
-                  {preset}
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="primary"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-              >
-                {loading ? "Building your course..." : "Generate study plan"}
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  setPrompt("");
-                  setResponse(null);
-                  setRaw(null);
-                  setError(null);
-                  setQuizStates({});
-                  setAnswers({});
-                  setReviews({});
-                  setReviewLoading({});
-                  setReviewError({});
-                  setIdeals({});
-                  setIdealLoading({});
-                  setIdealError({});
-                  setProgress([]);
-                }}
-              >
-                Reset
-              </button>
-            </div>
-            {error && (
-              <div className="mt-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                {error}
-              </div>
-            )}
-            {progress.length > 0 && (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-300">
-                <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-500">
-                  Progress
-                </p>
-                <ul className="mt-2 grid gap-1">
-                  {progress.slice(-5).map((item, idx) => (
-                    <li key={`${item}-${idx}`} className="rounded-md bg-black/40 px-2 py-1">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {response && (
-            <div className="panel space-y-8">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {response.jobTitle}
-                </p>
-                <h2 className="text-2xl font-semibold text-white">
-                  {response.overview}
-                </h2>
+                  {loading
+                    ? "Building your session..."
+                    : "Start interview session"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="btn-ghost"
+                  onPress={() => {
+                    setPrompt("");
+                    setError(null);
+                    setProgress([]);
+                  }}
+                >
+                  Reset
+                </Button>
               </div>
 
-              <div className="space-y-6">
-                {modules.map((module, moduleIndex) => {
-                  const quiz = quizStates[moduleIndex];
-                  const quizQuestions = module.quizQuestions ?? [];
-                  const quizCount = quizQuestions.length;
-                  const inProgress = quiz?.started && quiz.currentIndex < quizCount;
-                  const finished = quiz?.started && quiz.currentIndex >= quizCount;
-                  const currentQuestion = inProgress
-                    ? quizQuestions[quiz.currentIndex]
-                    : null;
-                  const progressValue = quizCount
-                    ? Math.min(
-                        Math.round(
-                          ((quiz?.currentIndex ?? 0) / quizCount) * 100
-                        ),
-                        100
-                      )
-                    : 0;
+              {error && (
+                <Card
+                  variant="secondary"
+                  className="border border-rose-500/40 bg-rose-500/10"
+                >
+                  <Card.Content className="text-sm text-rose-200">
+                    {error}
+                  </Card.Content>
+                </Card>
+              )}
 
-                  return (
-                    <div key={`${module.title}-${moduleIndex}`} className="card">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
-                            {module.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-300">
-                            {module.description}
-                          </p>
-                        </div>
-                        <span className="tag">Module {moduleIndex + 1}</span>
+              {progress.length > 0 && (
+                <Card variant="secondary" className="bg-white/5">
+                  <Card.Header className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    Progress
+                  </Card.Header>
+                  <Card.Content className="flex flex-col gap-2 text-xs text-slate-300">
+                    {progress.slice(-5).map((item, idx) => (
+                      <div
+                        key={`${item}-${idx}`}
+                        className="rounded-md bg-black/40 px-2 py-1"
+                      >
+                        {item}
                       </div>
-
-                      <div className="mt-6 space-y-4">
-                        <div>
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="section-label">Module Quiz</p>
-                            {quiz?.started && (
-                              <span className="text-xs text-slate-400">
-                                Progress: {progressValue}%
-                              </span>
-                            )}
-                          </div>
-
-                          {!quiz?.started && (
-                            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                              <div>
-                                <p className="text-sm font-semibold text-white">
-                                  Ready for quiz mode?
-                                </p>
-                                <p className="text-xs text-slate-300">
-                                  {quizCount} questions. Get instant feedback.
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                className="primary"
-                                onClick={() => startQuiz(moduleIndex)}
-                                disabled={quizCount === 0}
-                              >
-                                Start quiz
-                              </button>
-                            </div>
-                          )}
-
-                          {inProgress && currentQuestion && quiz && (
-                            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                              <div className="flex items-center justify-between text-xs text-slate-400">
-                                <span>
-                                  Question {quiz.currentIndex + 1} of {quizCount}
-                                </span>
-                                <span>Score: {quiz.score}</span>
-                              </div>
-                              <p className="mt-3 text-sm font-semibold text-white">
-                                {currentQuestion.question}
-                              </p>
-                              <div className="mt-3 grid gap-2">
-                                {(currentQuestion.options ?? []).map(
-                                  (option, optionIndex) => {
-                                    const selected = quiz.selectedIndex === optionIndex;
-                                    const isCorrect =
-                                      quiz.revealed &&
-                                      optionIndex === currentQuestion.correctIndex;
-                                    const isWrong =
-                                      quiz.revealed &&
-                                      selected &&
-                                      !isCorrect;
-
-                                    return (
-                                      <button
-                                        key={`${moduleIndex}-${quiz.currentIndex}-${optionIndex}`}
-                                        type="button"
-                                        className={
-                                          "option " +
-                                          (isCorrect
-                                            ? "option-correct"
-                                            : isWrong
-                                            ? "option-wrong"
-                                            : selected
-                                            ? "option-selected"
-                                            : "")
-                                        }
-                                        onClick={() =>
-                                          selectOption(
-                                            moduleIndex,
-                                            optionIndex,
-                                            currentQuestion.correctIndex
-                                          )
-                                        }
-                                      >
-                                        <span className="option-label">
-                                          {optionLabels[optionIndex] ?? ""}
-                                        </span>
-                                        <span>{option}</span>
-                                      </button>
-                                    );
-                                  }
-                                )}
-                              </div>
-                              <div className="mt-4 flex flex-wrap items-center gap-3">
-                                <button
-                                  type="button"
-                                  className="secondary"
-                                  disabled={quiz.selectedIndex === undefined}
-                                  onClick={() => revealAnswer(moduleIndex)}
-                                >
-                                  Check answer
-                                </button>
-                                {quiz.revealed && (
-                                  <button
-                                    type="button"
-                                    className="primary"
-                                    onClick={() =>
-                                      nextQuestion(moduleIndex, quizCount)
-                                    }
-                                  >
-                                    Next question
-                                  </button>
-                                )}
-                                {quiz.revealed && (
-                                  <span
-                                    className={
-                                      "text-xs font-semibold " +
-                                      (quiz.selectedIndex ===
-                                      currentQuestion.correctIndex
-                                        ? "text-emerald-300"
-                                        : "text-rose-300")
-                                    }
-                                  >
-                                    {quiz.selectedIndex ===
-                                    currentQuestion.correctIndex
-                                      ? "Correct"
-                                      : "Not quite"}
-                                  </span>
-                                )}
-                              </div>
-                              {quiz.revealed && (
-                                <p className="mt-3 text-xs text-slate-300">
-                                  {currentQuestion.explanation}
-                                </p>
-                              )}
-                            </div>
-                          )}
-
-                          {finished && quiz && (
-                            <div className="mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4">
-                              <p className="text-sm font-semibold text-emerald-200">
-                                Quiz complete
-                              </p>
-                              <p className="mt-1 text-xs text-emerald-100">
-                                You scored {quiz.score} / {quizCount}.
-                              </p>
-                              <button
-                                type="button"
-                                className="secondary mt-3"
-                                onClick={() => startQuiz(moduleIndex)}
-                              >
-                                Retake quiz
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <p className="section-label">Resources</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {(module.resources ?? []).map((resource, resourceIndex) => (
-                              <span
-                                key={`${resource}-${resourceIndex}`}
-                                className="chip"
-                              >
-                                {resource}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="card">
-                <p className="section-label">Mock interview practice</p>
-                <div className="mt-4 grid gap-4">
-                  {(response.mockInterviewQuestions ?? []).map((question, idx) => {
-                    const key = `q-${idx}`;
-                    const review = reviews[key];
-                    const loadingReview = reviewLoading[key];
-                    const errorReview = reviewError[key];
-                    const ideal = ideals[key];
-                    const loadingIdeal = idealLoading[key];
-                    const errorIdeal = idealError[key];
-
-                    return (
-                      <div key={key} className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
-                        <p className="text-sm font-semibold text-white">{question}</p>
-                        <textarea
-                          className="mt-3 min-h-[120px] w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10"
-                          placeholder="Type your answer..."
-                          value={answers[key] ?? ""}
-                          onChange={(event) =>
-                            setAnswers((prev) => ({
-                              ...prev,
-                              [key]: event.target.value,
-                            }))
-                          }
-                        />
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                          <button
-                            type="button"
-                            className="primary"
-                            onClick={() => submitReview(question, key)}
-                            disabled={loadingReview || !(answers[key] ?? "").trim()}
-                          >
-                            {loadingReview ? "Reviewing..." : "Get feedback"}
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => getIdealAnswer(question, key)}
-                            disabled={loadingIdeal}
-                          >
-                            {loadingIdeal ? "Generating..." : "Show ideal answer"}
-                          </button>
-                          {review && (
-                            <span className="text-xs text-slate-400">
-                              Score: {review.score}
-                            </span>
-                          )}
-                        </div>
-                        {errorReview && (
-                          <div className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-                            {errorReview}
-                          </div>
-                        )}
-                        {errorIdeal && (
-                          <div className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-                            {errorIdeal}
-                          </div>
-                        )}
-                        {review && (
-                          <div className="mt-4 grid gap-3 text-xs text-slate-200">
-                            <p className="text-sm text-white">{review.summary}</p>
-                            <div>
-                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
-                                Strengths
-                              </p>
-                              <ul className="mt-2 grid gap-1">
-                                {(review.strengths ?? []).map((item, itemIndex) => (
-                                  <li
-                                    key={`${key}-s-${itemIndex}`}
-                                    className="rounded-lg bg-white/5 px-2 py-1"
-                                  >
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
-                                Improvements
-                              </p>
-                              <ul className="mt-2 grid gap-1">
-                                {(review.improvements ?? []).map((item, itemIndex) => (
-                                  <li
-                                    key={`${key}-i-${itemIndex}`}
-                                    className="rounded-lg bg-white/5 px-2 py-1"
-                                  >
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        )}
-                        {ideal && (
-                          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-3 text-xs text-emerald-100">
-                            <p className="text-[0.65rem] uppercase tracking-[0.2em] text-emerald-300">
-                              Ideal answer
-                            </p>
-                            <p className="mt-2 text-sm text-emerald-50">
-                              {ideal.answer}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {raw && (
-            <details className="panel text-xs text-slate-300">
-              <summary className="cursor-pointer font-semibold uppercase tracking-wide text-slate-400">
-                Raw response
-              </summary>
-              <pre className="mt-3 whitespace-pre-wrap break-words text-slate-200">
-{raw}
-              </pre>
-            </details>
-          )}
+                    ))}
+                  </Card.Content>
+                </Card>
+              )}
+            </Card.Content>
+          </Card>
         </section>
       </div>
     </div>
