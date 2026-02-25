@@ -3,6 +3,7 @@
 import { Button, Card, Chip, Separator, TextArea } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { writeRateLimitFromHeaders } from "../lib/rateLimit";
 
 type CourseGuide = {
   jobTitle: string;
@@ -91,7 +92,9 @@ export default function QuizPage() {
     setReviewError((prev) => ({ ...prev, [key]: "" }));
 
     try {
-      const res = await fetch("/api/mock-interview/review", {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_STUDY_API_URL ?? "http://localhost:8080";
+      const res = await fetch(`${baseUrl}/api/mock-interview/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,6 +103,8 @@ export default function QuizPage() {
           jobTitle: course.jobTitle,
         }),
       });
+
+      writeRateLimitFromHeaders(res.headers);
 
       const text = await res.text();
       if (!res.ok) {
@@ -129,7 +134,9 @@ export default function QuizPage() {
     setIdealError((prev) => ({ ...prev, [key]: "" }));
 
     try {
-      const res = await fetch("/api/mock-interview/ideal", {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_STUDY_API_URL ?? "http://localhost:8080";
+      const res = await fetch(`${baseUrl}/api/mock-interview/ideal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,6 +144,8 @@ export default function QuizPage() {
           jobTitle: course.jobTitle,
         }),
       });
+
+      writeRateLimitFromHeaders(res.headers);
 
       const text = await res.text();
       if (!res.ok) {
@@ -161,11 +170,11 @@ export default function QuizPage() {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-[#0b0b11] text-slate-100 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
         <Card variant="secondary" className="glass-panel max-w-lg w-full">
           <Card.Content className="flex flex-col gap-4 text-center">
             <h1 className="text-lg font-semibold">No quiz session found</h1>
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-muted">
               Go back to AceAi and start a session.
             </p>
             <Button className="btn-primary" onPress={() => router.push("/")}
@@ -180,20 +189,19 @@ export default function QuizPage() {
 
   if (state.currentIndex >= total) {
     return (
-      <div className="min-h-screen bg-[#0b0b11] text-slate-100 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
         <Card variant="secondary" className="glass-panel max-w-2xl w-full">
           <Card.Content className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AceAi</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted">AceAi</p>
                 <h1 className="text-2xl font-semibold">Session complete</h1>
               </div>
               <Chip variant="soft" color="default">
                 {course.jobTitle}
               </Chip>
             </div>
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-100">
-              <p className="text-sm font-semibold">Session complete</p>
+            <div className="rounded-2xl  ">
               <p className="text-2xl font-semibold">{total} questions done</p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -203,7 +211,6 @@ export default function QuizPage() {
               </Button>
               <Button
                 variant="outline"
-                className="btn-ghost"
                 onPress={() =>
                   setState({ currentIndex: 0, completed: 0 })
                 }
@@ -224,11 +231,11 @@ export default function QuizPage() {
   const answerKey = `short-${state.currentIndex}`;
 
   return (
-    <div className="min-h-screen bg-[#0b0b11] text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute left-16 top-16 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl animate-glow" />
-        <div className="absolute right-12 top-12 h-60 w-60 rounded-full bg-indigo-500/10 blur-3xl animate-glow" />
-        <div className="absolute left-1/3 top-[55%] h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl animate-glow" />
+        <div className="absolute left-16 top-16 h-56 w-56 rounded-full bg-accent/15 blur-3xl animate-glow" />
+        <div className="absolute right-12 top-12 h-60 w-60 rounded-full bg-accent-soft/15 blur-3xl animate-glow" />
+        <div className="absolute left-1/3 top-[55%] h-80 w-80 rounded-full bg-default/20 blur-3xl animate-glow" />
       </div>
 
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-10">
@@ -242,21 +249,21 @@ export default function QuizPage() {
               Back
             </Button>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted">
                 Interview Session
               </p>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-foreground">
                 Mock Interview
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2 text-xs text-slate-400">
+          <div className="flex flex-col items-end gap-2 text-xs text-muted">
             <span>
               Question {state.currentIndex + 1} of {total}
             </span>
-            <div className="h-2 w-36 rounded-full bg-white/10">
+            <div className="h-2 w-36 rounded-full bg-default/40">
               <div
-                className="h-2 rounded-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-fuchsia-400"
+                className="h-2 rounded-full bg-accent"
                 style={{ width: `${progressValue}%` }}
               />
             </div>
@@ -269,9 +276,8 @@ export default function QuizPage() {
               <Chip variant="soft" color="accent" size="sm">
                 Short answer
               </Chip>
-              <span className="text-xs text-slate-400">Est. 1 min</span>
             </div>
-            <h2 className="text-2xl font-semibold text-white">
+            <h2 className="text-2xl font-semibold text-foreground">
               {current}
             </h2>
             <div className="flex flex-col gap-3">
@@ -286,7 +292,7 @@ export default function QuizPage() {
                   }))
                 }
                 variant="secondary"
-                className="bg-black/40 text-slate-100 placeholder:text-slate-500"
+                className="bg-default text-foreground placeholder:text-muted"
               />
               <div className="flex flex-wrap items-center gap-3">
                 <Button
@@ -305,34 +311,34 @@ export default function QuizPage() {
                 </Button>
               </div>
               {reviewError[answerKey] && (
-                <Card variant="secondary" className="border border-rose-500/40 bg-rose-500/10">
-                  <Card.Content className="text-xs text-rose-200">
+                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                  <Card.Content className="text-xs text-danger-foreground">
                     {reviewError[answerKey]}
                   </Card.Content>
                 </Card>
               )}
               {idealError[answerKey] && (
-                <Card variant="secondary" className="border border-rose-500/40 bg-rose-500/10">
-                  <Card.Content className="text-xs text-rose-200">
+                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                  <Card.Content className="text-xs text-danger-foreground">
                     {idealError[answerKey]}
                   </Card.Content>
                 </Card>
               )}
               {reviews[answerKey] && (
-                <Card variant="secondary" className="bg-white/5">
-                  <Card.Content className="flex flex-col gap-3 text-xs text-slate-200">
-                    <p className="text-sm text-white">
+                <Card variant="secondary" className="bg-surface">
+                  <Card.Content className="flex flex-col gap-3 text-xs text-muted">
+                    <p className="text-sm text-foreground">
                       {reviews[answerKey].summary}
                     </p>
                     <div>
-                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">
                         Strengths
                       </p>
                       <ul className="mt-2 grid gap-1">
                         {reviews[answerKey].strengths.map((item, index) => (
                           <li
                             key={`${answerKey}-s-${index}`}
-                            className="rounded-lg bg-white/5 px-2 py-1"
+                            className="rounded-lg bg-default/40 px-2 py-1"
                           >
                             {item}
                           </li>
@@ -340,14 +346,14 @@ export default function QuizPage() {
                       </ul>
                     </div>
                     <div>
-                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
+                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">
                         Improvements
                       </p>
                       <ul className="mt-2 grid gap-1">
                         {reviews[answerKey].improvements.map((item, index) => (
                           <li
                             key={`${answerKey}-i-${index}`}
-                            className="rounded-lg bg-white/5 px-2 py-1"
+                            className="rounded-lg bg-default/40 px-2 py-1"
                           >
                             {item}
                           </li>
@@ -358,12 +364,12 @@ export default function QuizPage() {
                 </Card>
               )}
               {ideals[answerKey] && (
-                <Card variant="secondary" className="border border-emerald-500/30 bg-emerald-500/10">
-                  <Card.Content className="flex flex-col gap-2 text-xs text-emerald-100">
-                    <p className="text-[0.65rem] uppercase tracking-[0.2em] text-emerald-300">
+                <Card className="border ">
+                  <Card.Content className="flex flex-col gap-2 text-xs ">
+                    <p>
                       Ideal answer
                     </p>
-                    <p className="text-sm text-emerald-50">
+                    <p className="text-sm ">
                       {ideals[answerKey].answer}
                     </p>
                   </Card.Content>

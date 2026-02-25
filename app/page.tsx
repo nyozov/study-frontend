@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Card, Chip, TextArea } from "@heroui/react";
+import { Button, Card, TextArea } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { writeRateLimitFromHeaders } from "./lib/rateLimit";
 
 type CourseGuide = {
   jobTitle: string;
@@ -46,6 +47,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
+
+      writeRateLimitFromHeaders(res.headers);
 
       if (!res.ok || !res.body) {
         const text = await res.text();
@@ -103,58 +106,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      
-
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col gap-10 px-6 py-14">
         <header className="flex flex-col items-center gap-4 text-center">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface">
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2C7.6 2 4 5.6 4 10c0 4.3 3.4 7.8 7.7 8v3l1.3-2.4L16 21v-3c4.1-.6 7-4.2 7-8.9C23 5.6 19.4 2 12 2Z"
-                  stroke="url(#ace-gradient)"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9 14l2.4-4.5L13 12l2.4-4.5"
-                  stroke="url(#ace-gradient)"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <defs>
-                  <linearGradient
-                    id="ace-gradient"
-                    x1="4"
-                    y1="4"
-                    x2="20"
-                    y2="20"
-                  >
-                    <stop stopColor="var(--accent)" />
-                    <stop offset="0.5" stopColor="var(--accent-soft)" />
-                    <stop offset="1" stopColor="var(--default)" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <div className="text-left">
-              <p className="text-xs uppercase tracking-[0.35em] text-muted">
-                AceAi
-              </p>
-              <p className="text-lg font-semibold text-foreground">
-                Interview practice suite
-              </p>
-            </div>
-          </div>
           <h1 className="text-3xl font-semibold sm:text-4xl">
-            Nail your next interview with confidence.
+            Ace your next interview with confidence.
           </h1>
           <p className="max-w-2xl text-sm text-muted">
             Paste a job description below. Our AI will analyze the requirements
@@ -171,7 +126,7 @@ export default function Home() {
                   Job description
                 </label>
                 <TextArea
-                  rows={7}
+                  rows={8}
                   placeholder="Paste a job description or describe a role here..."
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
@@ -216,7 +171,10 @@ export default function Home() {
               </div>
 
               {error && (
-                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                <Card
+                  variant="secondary"
+                  className="border border-danger/40 bg-danger/10"
+                >
                   <Card.Content className="text-sm text-danger-foreground">
                     {error}
                   </Card.Content>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import RateLimitBadge from "./components/RateLimitBadge";
+import AppNavbar from "./components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" data-theme="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AppNavbar/>
         {children}
+        <RateLimitBadge />
       </body>
     </html>
   );
