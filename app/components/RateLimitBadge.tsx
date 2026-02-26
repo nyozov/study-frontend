@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chip } from "@heroui/react";
 import { onRateLimitChange, readRateLimit } from "../lib/rateLimit";
+import { formatDuration } from "../lib/formatters";
 
 export default function RateLimitBadge() {
   const [info, setInfo] = useState(readRateLimit());
@@ -36,7 +37,9 @@ export default function RateLimitBadge() {
     <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
       <Chip variant="soft" color="default" className="muted-chip">
         Rate limit: {context}
-        {countdown > 0 ? ` · resets in ${countdown}s` : ""}
+        {countdown && countdown > 0
+          ? ` · resets in ${formatDuration(countdown)}`
+          : ""}
       </Chip>
     </div>
   );
