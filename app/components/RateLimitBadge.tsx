@@ -28,16 +28,15 @@ export default function RateLimitBadge() {
 
   if (!info) return null;
 
-  const context =
-    info.minute && info.hour && info.day
-      ? `Minute ${info.minute.remaining}/${info.minute.limit} · Hour ${info.hour.remaining}/${info.hour.limit} · Day ${info.day.remaining}/${info.day.limit}`
-      : `${info.remaining}/${info.limit}`;
+  const context = info.day
+    ? `Day ${info.day.remaining}/${info.day.limit}`
+    : `${info.remaining}/${info.limit}`;
 
   return (
     <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
       <Chip variant="soft" color="default" className="muted-chip">
-        Rate limit: {context} ·{" "}
-        {countdown > 0 ? `resets in ${countdown}s` : "resetting…"}
+        Rate limit: {context}
+        {countdown > 0 ? ` · resets in ${countdown}s` : ""}
       </Chip>
     </div>
   );

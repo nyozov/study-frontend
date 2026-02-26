@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, Chip, Separator, TextArea } from "@heroui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { writeRateLimitFromHeaders } from "../lib/rateLimit";
 

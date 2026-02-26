@@ -4,7 +4,6 @@ export type RateLimitInfo = {
   resetSeconds: string;
   resetAt: number;
   minute?: WindowInfo;
-  hour?: WindowInfo;
   day?: WindowInfo;
 };
 
@@ -54,15 +53,15 @@ export const writeRateLimitFromHeaders = (headers: Headers) => {
   if (!remaining || !limit || !resetSeconds) return;
 
   const minute = readWindow(headers, "x-ratelimit-minute");
-  const hour = readWindow(headers, "x-ratelimit-hour");
   const day = readWindow(headers, "x-ratelimit-day");
 
+  if (!day) return;
+
   writeRateLimit({
-    remaining,
-    limit,
-    resetSeconds,
+    remaining: day.remaining,
+    limit: day.limit,
+    resetSeconds: day.resetSeconds,
     minute,
-    hour,
     day,
   });
 };
