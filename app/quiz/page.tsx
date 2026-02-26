@@ -194,7 +194,7 @@ export default function QuizPage() {
           <Card.Content className="flex flex-col gap-6">
             <div className="flex flex-col justify-between">
               <div>
-                <p className="text-xs  tracking-[0.3em] text-muted">AceAi</p>
+                <p className="text-xs   text-muted">AceAi</p>
                 <h1 className="text-2xl font-semibold">Session complete</h1>
               </div>
               <Chip variant="soft" color="default">
@@ -246,7 +246,7 @@ export default function QuizPage() {
               Back
             </Button>
             <div>
-              <p className="text-xs  tracking-[0.3em] text-muted">
+              <p className="text-xs   text-muted">
                 Interview Session
               </p>
               <p className="text-lg font-semibold text-foreground">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, TextArea } from "@heroui/react";
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { writeRateLimitFromHeaders } from "./lib/rateLimit";
 
@@ -116,9 +116,6 @@ export default function Home() {
           <Card variant="secondary" className="glass-panel">
             <Card.Content className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-muted">
-                  Job description
-                </label>
                 <TextArea
                   rows={8}
                   placeholder="Paste a job description or describe a role here..."
@@ -177,7 +174,7 @@ export default function Home() {
 
               {progress.length > 0 && (
                 <Card variant="secondary" className="bg-surface">
-                  <Card.Header className="text-xs uppercase tracking-[0.2em] text-muted">
+                  <Card.Header className="text-xs   text-muted">
                     Progress
                   </Card.Header>
                   <Card.Content className="flex flex-col gap-2 text-xs text-muted">
