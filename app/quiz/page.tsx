@@ -5,15 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { writeRateLimitFromHeaders } from "../lib/rateLimit";
 
-type CourseGuide = {
+type MockInterviewSession = {
   jobTitle: string;
-  overview: string;
-  modules: Array<{
-    title: string;
-    description: string;
-    resources: string[];
-  }>;
-  mockInterviewQuestions: string[];
+  questions: string[];
 };
 
 type ReviewResponse = {
@@ -34,26 +28,33 @@ type QuizState = {
 
 export default function QuizPage() {
   const router = useRouter();
-  const [course, setCourse] = useState<CourseGuide | null>(null);
+  const [course, setCourse] = useState<MockInterviewSession | null>(null);
   const [state, setState] = useState<QuizState>({
     currentIndex: 0,
     completed: 0,
   });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reviews, setReviews] = useState<Record<string, ReviewResponse>>({});
-  const [reviewLoading, setReviewLoading] = useState<Record<string, boolean>>({});
+  const [reviewLoading, setReviewLoading] = useState<Record<string, boolean>>(
+    {},
+  );
   const [reviewError, setReviewError] = useState<Record<string, string>>({});
   const [ideals, setIdeals] = useState<Record<string, IdealAnswerResponse>>({});
   const [idealLoading, setIdealLoading] = useState<Record<string, boolean>>({});
   const [idealError, setIdealError] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    const rawSession = localStorage.getItem("aceai_session");
     const rawCourse = localStorage.getItem("aceai_course");
-    if (!rawCourse) return;
+    const raw = rawSession ?? rawCourse;
+    if (!raw) return;
 
     try {
-      const parsed = JSON.parse(rawCourse) as CourseGuide;
-      setCourse(parsed);
+      const parsed = JSON.parse(raw) as MockInterviewSession & {
+        mockInterviewQuestions?: string[];
+      };
+      const questions = parsed.questions ?? parsed.mockInterviewQuestions ?? [];
+      setCourse({ jobTitle: parsed.jobTitle, questions });
     } catch {
       return;
     }
@@ -61,7 +62,7 @@ export default function QuizPage() {
 
   const questions = useMemo<string[]>(() => {
     if (!course) return [];
-    return course.mockInterviewQuestions ?? [];
+    return course.questions ?? [];
   }, [course]);
 
   const total = questions.length;
@@ -177,8 +178,7 @@ export default function QuizPage() {
             <p className="text-sm text-muted">
               Go back to AceAi and start a session.
             </p>
-            <Button className="btn-primary" onPress={() => router.push("/")}
-            >
+            <Button className="btn-primary" onPress={() => router.push("/")}>
               Back to AceAi
             </Button>
           </Card.Content>
@@ -194,7 +194,7 @@ export default function QuizPage() {
           <Card.Content className="flex flex-col gap-6">
             <div className="flex flex-col justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-muted">AceAi</p>
+                <p className="text-xs  tracking-[0.3em] text-muted">AceAi</p>
                 <h1 className="text-2xl font-semibold">Session complete</h1>
               </div>
               <Chip variant="soft" color="default">
@@ -205,15 +205,12 @@ export default function QuizPage() {
               <p className="text-2xl font-semibold">{total} questions done</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button className="btn-primary" onPress={() => router.push("/")}
-              >
+              <Button className="btn-primary" onPress={() => router.push("/")}>
                 Back to AceAi
               </Button>
               <Button
                 variant="outline"
-                onPress={() =>
-                  setState({ currentIndex: 0, completed: 0 })
-                }
+                onPress={() => setState({ currentIndex: 0, completed: 0 })}
               >
                 Retake session
               </Button>
@@ -249,7 +246,7 @@ export default function QuizPage() {
               Back
             </Button>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-muted">
+              <p className="text-xs  tracking-[0.3em] text-muted">
                 Interview Session
               </p>
               <p className="text-lg font-semibold text-foreground">
@@ -307,18 +304,26 @@ export default function QuizPage() {
                   className="btn-ghost"
                   onPress={() => getIdealAnswer(current, answerKey)}
                 >
-                  {idealLoading[answerKey] ? "Generating..." : "Show ideal answer"}
+                  {idealLoading[answerKey]
+                    ? "Generating..."
+                    : "Show ideal answer"}
                 </Button>
               </div>
               {reviewError[answerKey] && (
-                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                <Card
+                  variant="secondary"
+                  className="border border-danger/40 bg-danger/10"
+                >
                   <Card.Content className="text-xs text-danger-foreground">
                     {reviewError[answerKey]}
                   </Card.Content>
                 </Card>
               )}
               {idealError[answerKey] && (
-                <Card variant="secondary" className="border border-danger/40 bg-danger/10">
+                <Card
+                  variant="secondary"
+                  className="border border-danger/40 bg-danger/10"
+                >
                   <Card.Content className="text-xs text-danger-foreground">
                     {idealError[answerKey]}
                   </Card.Content>
@@ -331,9 +336,7 @@ export default function QuizPage() {
                       {reviews[answerKey].summary}
                     </p>
                     <div>
-                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">
-                        Strengths
-                      </p>
+                      <p className="">Strengths</p>
                       <ul className="mt-2 grid gap-1">
                         {reviews[answerKey].strengths.map((item, index) => (
                           <li
@@ -346,9 +349,7 @@ export default function QuizPage() {
                       </ul>
                     </div>
                     <div>
-                      <p className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">
-                        Improvements
-                      </p>
+                      <p className="text-muted">Improvements</p>
                       <ul className="mt-2 grid gap-1">
                         {reviews[answerKey].improvements.map((item, index) => (
                           <li
@@ -366,12 +367,8 @@ export default function QuizPage() {
               {ideals[answerKey] && (
                 <Card className="border ">
                   <Card.Content className="flex flex-col gap-2 text-xs ">
-                    <p>
-                      Ideal answer
-                    </p>
-                    <p className="text-sm ">
-                      {ideals[answerKey].answer}
-                    </p>
+                    <p>Ideal answer</p>
+                    <p className="text-sm ">{ideals[answerKey].answer}</p>
                   </Card.Content>
                 </Card>
               )}

@@ -5,15 +5,9 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { writeRateLimitFromHeaders } from "./lib/rateLimit";
 
-type CourseGuide = {
+type MockInterviewSession = {
   jobTitle: string;
-  overview: string;
-  modules: Array<{
-    title: string;
-    description: string;
-    resources: string[];
-  }>;
-  mockInterviewQuestions: string[];
+  questions: string[];
 };
 
 const promptPresets = [
@@ -42,7 +36,7 @@ export default function Home() {
     try {
       const baseUrl =
         process.env.NEXT_PUBLIC_STUDY_API_URL ?? "http://localhost:8080";
-      const res = await fetch(`${baseUrl}/api/course-guide/stream`, {
+      const res = await fetch(`${baseUrl}/api/mock-interview/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim() }),
@@ -86,8 +80,8 @@ export default function Home() {
           }
 
           if (eventName === "result") {
-            const json = JSON.parse(eventData) as CourseGuide;
-            localStorage.setItem("aceai_course", JSON.stringify(json));
+            const json = JSON.parse(eventData) as MockInterviewSession;
+            localStorage.setItem("aceai_session", JSON.stringify(json));
             router.push("/quiz");
             return;
           }
